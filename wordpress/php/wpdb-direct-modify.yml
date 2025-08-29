@@ -1,0 +1,47 @@
+rules:
+  - id: wpdb-direct-modify
+    languages:
+      - php
+    severity: WARNING
+    mode: taint
+    message: |
+      Some WordPress tables store metadata in a serialized format.
+      These metadata are automatically deserialized when retrieved.
+      Therefore, directly manipulating them using database operation functions
+      may lead to object injection vulnerabilities.
+    pattern-sources:
+      - patterns:
+        - pattern: $TAB
+        - metavariable-regex:
+            metavariable: $TAB
+            regex: ".*(comments|links|posts|terms|term_relationships|users|blogs|blog_versions|registration_log|signups|site)"
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $wpdb->insert($TAB, ...)
+          - pattern: $wpdb->update($TAB, ...)
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  sprintf($SQLSTR, ...)
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  $wpdb->prepare($SQLSTR, ...)
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  "...$EXPR..."
+              - metavariable-regex:
+                  metavariable: $EXPR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  "$SQLSTR".$EXPR
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+

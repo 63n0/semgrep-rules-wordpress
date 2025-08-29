@@ -1,0 +1,48 @@
+rules:
+  - id: wpdb-direct-modify-serialized-table
+    languages:
+      - php
+    severity: ERROR
+    mode: taint
+    message: |
+      Some WordPress tables (options, postmeta, commentmeta, usermeta, termmeta, sitemeta)
+      store metadata in a serialized format. Directly modifying these tables
+      using $wpdb can lead to object injection vulnerabilities, since
+      the metadata is automatically deserialized when retrieved.
+      Always use the corresponding WordPress API functions.
+    pattern-sources:
+      - patterns:
+        - pattern: $TAB
+        - metavariable-regex:
+            metavariable: $TAB
+            regex: ".*(options|postmeta|commentmeta|usermeta|termmeta|sitemeta)"
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $wpdb->insert($TAB, ...)
+          - pattern: $wpdb->update($TAB, ...)
+      - pattern-either:
+          - patterns:
+              - pattern: |
+                  sprintf($SQLSTR, ...)
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  $wpdb->prepare($SQLSTR, ...)
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  "...$EXPR..."
+              - metavariable-regex:
+                  metavariable: $EXPR
+                  regex: (?is).*\b(insert|update)\b.*
+          - patterns:
+              - pattern: |
+                  "$SQLSTR".$EXPR
+              - metavariable-regex:
+                  metavariable: $SQLSTR
+                  regex: (?is).*\b(insert|update)\b.*
+
