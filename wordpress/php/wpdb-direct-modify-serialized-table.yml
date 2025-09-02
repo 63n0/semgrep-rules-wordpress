@@ -11,11 +11,18 @@ rules:
       the metadata is automatically deserialized when retrieved.
       Always use the corresponding WordPress API functions.
     pattern-sources:
+      - pattern-either:
+        - pattern: $wpdb->options
+        - pattern: $wpdb->postmeta
+        - pattern: $wpdb->commentmeta
+        - pattern: $wpdb->usermeta
+        - pattern: $wpdb->termmeta
+        - pattern: $wpdb->sitemeta
       - patterns:
-        - pattern: $TAB
+        - pattern: '"$STRING"'
         - metavariable-regex:
-            metavariable: $TAB
-            regex: ".*(options|postmeta|commentmeta|usermeta|termmeta|sitemeta)"
+            metavariable: $STRING
+            regex: ".*(options|postmeta|commentmeta|usermeta|termmeta|sitemeta).*"
     pattern-sinks:
       - pattern-either:
           - pattern: $wpdb->insert($TAB, ...)
