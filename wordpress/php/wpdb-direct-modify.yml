@@ -5,16 +5,30 @@ rules:
     severity: WARNING
     mode: taint
     message: |
-      Some WordPress tables store metadata in a serialized format.
-      These metadata are automatically deserialized when retrieved.
-      Therefore, directly manipulating them using database operation functions
-      may lead to object injection vulnerabilities.
+      Directly modifying core WordPress tables (comments, links, posts, terms,
+      term_relationships, users, blogs, blog_versions, registration_log, signups, site)
+      using $wpdb bypasses the built-in WordPress APIs.
+      This can lead to data corruption, privilege escalation, or other vulnerabilities,
+      even if insecure deserialization is not involved.
+      Always use the official WordPress API functions instead of raw queries.
     pattern-sources:
+      - pattern-either:
+        - pattern: $wpdb->comments
+        - pattern: $wpdb->links
+        - pattern: $wpdb->posts
+        - pattern: $wpdb->terms
+        - pattern: $wpdb->term_relationships
+        - pattern: $wpdb->users
+        - pattern: $wpdb->blogs
+        - pattern: $wpdb->blog_versions
+        - pattern: $wpdb->registration_log
+        - pattern: $wpdb->signups
+        - pattern: $wpdb->site
       - patterns:
-        - pattern: $TAB
+        - pattern: '"$STRING"'
         - metavariable-regex:
-            metavariable: $TAB
-            regex: ".*(comments|links|posts|terms|term_relationships|users|blogs|blog_versions|registration_log|signups|site)"
+            metavariable: $STRING
+            regex: ".*(comments|links|posts|terms|term_relationships|users|blogs|blog_versions|registration_log|signups|site).*"
     pattern-sinks:
       - pattern-either:
           - pattern: $wpdb->insert($TAB, ...)
